@@ -1,0 +1,1 @@
+go build -o filter.so -buildmode=c-shared .
