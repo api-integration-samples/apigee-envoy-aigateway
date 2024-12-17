@@ -18,8 +18,7 @@ func init() {
 }
 
 type config struct {
-	echoBody string
-	// other fields
+	apigeeEndpoint string
 }
 
 type parser struct {
@@ -35,14 +34,14 @@ func (p *parser) Parse(any *anypb.Any, callbacks api.ConfigCallbackHandler) (int
 
 	v := configStruct.Value
 	conf := &config{}
-	prefix, ok := v.AsMap()["prefix_localreply_body"]
+	prefix, ok := v.AsMap()["apigee_endpoint"]
 	if !ok {
-		return nil, errors.New("missing prefix_localreply_body")
+		return nil, errors.New("missing apigee_endpoint")
 	}
 	if str, ok := prefix.(string); ok {
-		conf.echoBody = str
+		conf.apigeeEndpoint = str
 	} else {
-		return nil, fmt.Errorf("prefix_localreply_body: expect string while got %T", prefix)
+		return nil, fmt.Errorf("apigee_endpoint: expect string while got %T", prefix)
 	}
 	return conf, nil
 }
@@ -54,8 +53,8 @@ func (p *parser) Merge(parent interface{}, child interface{}) interface{} {
 
 	// copy one, do not update parentConfig directly.
 	newConfig := *parentConfig
-	if childConfig.echoBody != "" {
-		newConfig.echoBody = childConfig.echoBody
+	if childConfig.apigeeEndpoint != "" {
+		newConfig.apigeeEndpoint = childConfig.apigeeEndpoint
 	}
 	return &newConfig
 }

@@ -1,12 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"os"
+	"net/http"
+	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
 	"golang.org/x/oauth2"
@@ -23,8 +25,9 @@ type UsageMetadata struct {
 	TotalTokenCount      int `json:"totalTokenCount"`
 }
 
-var UpdateUpstreamBody = "upstream response body updated by the simple plugin"
-var requestBody = ""
+var prompt_regexp, _ = regexp.Compile("\"prompt_tokens\":\\s*\\d+")
+var completion_regexp, _ = regexp.Compile("\"completion_tokens\":\\s*\\d+")
+var total_regexp, _ = regexp.Compile("\"total_tokens\":\\s*\\d+")
 
 // The callbacks in the filter, like `DecodeHeaders`, can be implemented on demand.
 // Because api.PassThroughStreamFilter provides a default implementation.
@@ -33,14 +36,8 @@ type filter struct {
 
 	callbacks api.FilterCallbackHandler
 	path      string
+	key       string
 	config    *config
-}
-
-func (f *filter) sendLocalReplyInternal() api.StatusType {
-	body := fmt.Sprintf("%s, path: %s\r\n", f.config.echoBody, f.path)
-	f.callbacks.DecoderFilterCallbacks().SendLocalReply(200, body, nil, 0, "")
-	// Remember to return LocalReply when the request is replied locally
-	return api.LocalReply
 }
 
 // Callbacks which are called in request path
@@ -48,9 +45,12 @@ func (f *filter) sendLocalReplyInternal() api.StatusType {
 func (f *filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.StatusType {
 	f.path, _ = header.Get(":path")
 	api.LogDebugf("get path %s", f.path)
+	key, found := header.Get("x-api-key")
+	if found {
+		f.key = key
+	}
 
-	fmt.Println("DECODEHEADERS")
-
+	// Add Google auth token for backend
 	var token *oauth2.Token
 	scopes := []string{
 		"https://www.googleapis.com/auth/cloud-platform",
@@ -63,53 +63,19 @@ func (f *filter) DecodeHeaders(header api.RequestHeaderMap, endStream bool) api.
 		token, err = credentials.TokenSource.Token()
 
 		if err == nil {
-			// flags.Token = token.AccessToken
-			fmt.Println("SETTING AUTHORIZATION HEADER")
 			header.Set("Authorization", "Bearer "+token.AccessToken)
 		} else {
 			fmt.Println(err.Error())
 		}
-	} else {
-		fmt.Println("Credentials file : " + os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"))
-
-		keyFile, err := os.Open(os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"))
-		if err == nil {
-			byteValue, _ := io.ReadAll(keyFile)
-			fmt.Println(string(byteValue))
-		} else {
-			fmt.Println(err.Error())
-		}
-		defer keyFile.Close()
-
-		fmt.Println("COULD NOT FIND CREDENTIALS")
 	}
 
-	if f.path == "/localreply_by_config" {
-		return f.sendLocalReplyInternal()
-	}
 	return api.Continue
-	/*
-		// If the code is time-consuming, to avoid blocking the Envoy,
-		// we need to run the code in a background goroutine
-		// and suspend & resume the filter
-		go func() {
-			defer f.callbacks.DecoderFilterCallbacks().RecoverPanic()
-			// do time-consuming jobs
-
-			// resume the filter
-			f.callbacks.DecoderFilterCallbacks().Continue(status)
-		}()
-
-		// suspend the filter
-		return api.Running
-	*/
 }
 
 // DecodeData might be called multiple times during handling the request body.
 // The endStream is true when handling the last piece of the body.
 func (f *filter) DecodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
 	// support suspending & resuming the filter in a background goroutine
-	fmt.Println("DECODEDATA")
 	return api.Continue
 }
 
@@ -121,11 +87,7 @@ func (f *filter) DecodeTrailers(trailers api.RequestTrailerMap) api.StatusType {
 // Callbacks which are called in response path
 // The endStream is true if the response doesn't have body
 func (f *filter) EncodeHeaders(header api.ResponseHeaderMap, endStream bool) api.StatusType {
-	if f.path == "/update_upstream_response" {
-		fmt.Println("SETTING Content-Length to " + strconv.Itoa(len(UpdateUpstreamBody)))
-		header.Set("Content-Length", strconv.Itoa(len(UpdateUpstreamBody)))
-	}
-	header.Set("Rsp-Header-From-Go", "bar-test")
+
 	// support suspending & resuming the filter in a background goroutine
 	return api.Continue
 }
@@ -133,33 +95,40 @@ func (f *filter) EncodeHeaders(header api.ResponseHeaderMap, endStream bool) api
 // EncodeData might be called multiple times during handling the response body.
 // The endStream is true when handling the last piece of the body.
 func (f *filter) EncodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
-	// if f.path == "/update_upstream_response" {
-	// 	if endStream {
-	// 		buffer.SetString(UpdateUpstreamBody)
-	// 	} else {
-	// 		buffer.Reset()
-	// 	}
-	// } else {
 
-	fmt.Println("RESPONSE IS " + buffer.String())
+	bufferContent := buffer.String()
 
-	if endStream {
-		fmt.Println("RESPONSE IS " + buffer.String())
-		var response []Result
-		json.Unmarshal(buffer.Bytes(), &response)
+	if strings.Contains(bufferContent, "prompt_tokens") {
+		prompt_tokens := prompt_regexp.FindString(bufferContent)
+		prompt_tokens = strings.Trim(strings.Replace(prompt_tokens, "\"prompt_tokens\":", "", -1), " ")
+		fmt.Println("prompt_tokens: " + prompt_tokens)
+		completion_tokens := completion_regexp.FindString(bufferContent)
+		completion_tokens = strings.Trim(strings.Replace(completion_tokens, "\"completion_tokens\":", "", -1), " ")
+		fmt.Println("completion_tokens: " + completion_tokens)
+		total_tokens := total_regexp.FindString(bufferContent)
+		total_tokens = strings.Trim(strings.Replace(total_tokens, "\"total_tokens\":", "", -1), " ")
+		fmt.Println("total_tokens: " + total_tokens)
 
-		if len(response) > 0 {
-			fmt.Println("Token length: " + strconv.Itoa(response[len(response)-1].UsageMetadata.CandidatesTokenCount))
-		}
+		postBody, _ := json.Marshal(map[string]string{
+			"model_name":        f.path,
+			"prompt_tokens":     prompt_tokens,
+			"completion_tokens": completion_tokens,
+			"total_tokens":      total_tokens,
+		})
+
+		requestBody := bytes.NewBuffer(postBody)
+		resp, _ := http.NewRequest(http.MethodPost, f.config.apigeeEndpoint+"/genai/token-analytics", requestBody)
+		resp.Header.Add("x-api-key", f.key)
+		resp.Header.Add("Content-Type", "application/json")
+
+		http.DefaultClient.Do(resp)
+		// handle error, log to retry later...
 	}
 
-	//}
-	// support suspending & resuming the filter in a background goroutine
 	return api.Continue
 }
 
 func (f *filter) EncodeTrailers(trailers api.ResponseTrailerMap) api.StatusType {
-	fmt.Println("ENCODETRAILERS")
 	return api.Continue
 }
 

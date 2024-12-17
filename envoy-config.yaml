@@ -21,7 +21,7 @@ static_resources:
               plugin_config:
                 "@type": type.googleapis.com/xds.type.v3.TypedStruct
                 value:
-                  prefix_localreply_body: "Configured local reply from go"
+                  apigee_endpoint: "https://34-8-159-97.nip.io"
           - name: envoy.filters.http.router
             typed_config:
               "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -32,10 +32,17 @@ static_resources:
               domains: ["*"]
               routes:
               - match:
-                  prefix: "/"
+                  prefix: "/gemini15-flash"
                 route:
+                  prefix_rewrite: "/v1beta1/projects/apigee-tlab1/locations/europe-west1/endpoints/openapi/chat/completions"
                   host_rewrite_literal: europe-west1-aiplatform.googleapis.com
                   cluster: service_gemini_api
+              - match:
+                  prefix: "/mistral2407-nemo"
+                route:
+                  prefix_rewrite: "/v1/projects/apigee-tlab1/locations/europe-west4/publishers/mistralai/models/mistral-nemo@2407:rawPredict"
+                  host_rewrite_literal: europe-west4-aiplatform.googleapis.com
+                  cluster: service_mistral_api
   clusters:
   - name: service_gemini_api
     type: LOGICAL_DNS
@@ -55,3 +62,21 @@ static_resources:
       typed_config:
         "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
         sni: europe-west1-aiplatform.googleapis.com
+  - name: service_mistral_api
+    type: LOGICAL_DNS
+    # Comment out the following line to test on v6 networks
+    dns_lookup_family: V4_ONLY
+    load_assignment:
+      cluster_name: service_mistral_api
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: europe-west4-aiplatform.googleapis.com
+                port_value: 443
+    transport_socket:
+      name: envoy.transport_sockets.tls
+      typed_config:
+        "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+        sni: europe-west4-aiplatform.googleapis.com
