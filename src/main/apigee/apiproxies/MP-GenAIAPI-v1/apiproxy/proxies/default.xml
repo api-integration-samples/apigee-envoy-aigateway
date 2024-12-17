@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ProxyEndpoint name="default">
+  <Description/>
+  <FaultRules/>
+  <PreFlow name="PreFlow">
+    <Request>
+      <Step>
+        <Name>RF-ReturnCors</Name>
+        <Condition>request.verb = "OPTIONS"</Condition>
+      </Step>
+      <Step>
+        <Name>VA-VerifyKey</Name>
+      </Step>
+      <Step>
+        <Name>AM-RemoveKey</Name>
+      </Step>
+      <Step>
+        <Name>EV-GetInputs</Name>
+      </Step>
+      <Step>
+        <Condition>genai.prompt == null</Condition>
+        <Name>RF-ValidateInputs</Name>
+      </Step>
+    </Request>
+    <Response/>
+  </PreFlow>
+  <PostFlow name="PostFlow">
+    <Request/>
+    <Response>
+      <Step>
+        <Name>DC-TokenCounts</Name>
+      </Step>
+      <Step>
+        <Name>AM-SetCors</Name>
+      </Step>
+    </Response>
+  </PostFlow>
+  <Flows>
+  </Flows>
+  <HTTPProxyConnection>
+    <BasePath>/v1/genai</BasePath>
+    <Properties/>
+    <VirtualHost>default</VirtualHost>
+  </HTTPProxyConnection>
+  <RouteRule name="gemini">
+    <Condition>proxy.pathsuffix MatchesPath "/gemini"</Condition>
+    <TargetEndpoint>Gemini</TargetEndpoint>
+  </RouteRule>
+  <RouteRule name="mistral">
+    <Condition>proxy.pathsuffix MatchesPath "/mistral"</Condition>
+    <TargetEndpoint>Mistral</TargetEndpoint>
+  </RouteRule>
+</ProxyEndpoint>

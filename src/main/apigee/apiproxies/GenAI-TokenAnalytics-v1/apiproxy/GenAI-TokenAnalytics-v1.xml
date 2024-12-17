@@ -1,0 +1,15 @@
+<APIProxy revision="1" name="GenAI-TokenAnalytics-v1">
+    <DisplayName></DisplayName>
+    <Description></Description>
+    <CreatedAt>1734441727187</CreatedAt>
+    <LastModifiedAt>1734442360190</LastModifiedAt>
+    <BasePaths>/genai/token-analytics</BasePaths>
+    <Policies>
+        <Policy>EV-GetData</Policy>
+        <Policy>VA-VerifyKey</Policy>
+        <Policy>DC-CaptureTokens</Policy>
+    </Policies>
+    <ProxyEndpoints>
+        <ProxyEndpoint>default</ProxyEndpoint>
+    </ProxyEndpoints>
+</APIProxy>

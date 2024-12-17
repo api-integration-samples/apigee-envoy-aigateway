@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<RaiseFault continueOnError="false" enabled="true" name="RF-ReturnCors">
+  <DisplayName>RF-ReturnCors</DisplayName>
+  <Properties/>
+  <Properties/>
+  <FaultResponse>
+    <Set>
+      <Headers>
+        <Header name="Access-Control-Allow-Origin">*</Header>
+        <Header name="Access-Control-Allow-Headers">*</Header>
+      </Headers>
+      <Payload contentType="text/plain">
+      </Payload>
+      <StatusCode>200</StatusCode>
+      <ReasonPhrase>Success</ReasonPhrase>
+    </Set>
+  </FaultResponse>
+  <IgnoreUnresolvedVariables>true</IgnoreUnresolvedVariables>
+</RaiseFault>

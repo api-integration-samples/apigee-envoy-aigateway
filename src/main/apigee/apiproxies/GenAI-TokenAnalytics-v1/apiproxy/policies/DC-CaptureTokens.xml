@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<DataCapture name="DC-CaptureTokens" continueOnError="false" enabled="true">
+  <DisplayName>DC-CaptureTokens</DisplayName>
+  <IgnoreUnresolvedVariables>false</IgnoreUnresolvedVariables>
+  <Capture>
+    <Collect ref="model_name" default="0"/>
+    <DataCollector>dc_genai_model_name</DataCollector>
+  </Capture>
+  <Capture>
+    <Collect ref="prompt_tokens" default="0"/>
+    <DataCollector>dc_genai_prompt_tokens</DataCollector>
+  </Capture>
+  <Capture>
+    <Collect ref="completion_tokens" default="0"/>
+    <DataCollector>dc_genai_completion_tokens</DataCollector>
+  </Capture>
+  <Capture>
+    <Collect ref="total_tokens" default="0"/>
+    <DataCollector>dc_genai_total_tokens</DataCollector>
+  </Capture>
+</DataCapture>

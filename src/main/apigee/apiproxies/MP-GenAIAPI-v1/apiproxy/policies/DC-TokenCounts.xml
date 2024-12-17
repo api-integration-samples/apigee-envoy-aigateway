@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<DataCapture name="DC-TokenCounts" continueOnError="false" enabled="true">
+  <DisplayName>DC-TokenCounts</DisplayName>
+  <IgnoreUnresolvedVariables>false</IgnoreUnresolvedVariables>
+  <Capture>
+    <Collect ref="genai.promptTokenCount" default="0"/>
+    <DataCollector>dc_promptTokenCount</DataCollector>
+  </Capture>
+  <Capture>
+    <Collect ref="genai.responseTokenCount" default="0"/>
+    <DataCollector>dc_responseTokenCount</DataCollector>
+  </Capture>
+  <Capture>
+    <Collect ref="genai.totalTokenCount" default="0"/>
+    <DataCollector>dc_totalTokenCount</DataCollector>
+  </Capture>
+</DataCapture>

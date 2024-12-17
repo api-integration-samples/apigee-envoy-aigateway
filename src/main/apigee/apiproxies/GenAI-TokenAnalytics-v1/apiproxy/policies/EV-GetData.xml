@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ExtractVariables continueOnError="false" enabled="true" name="EV-GetData">
+  <DisplayName>EV-GetData</DisplayName>
+  <Properties/>
+  <JSONPayload>
+    <Variable name="model_name">
+      <JSONPath>$.model_name</JSONPath>
+    </Variable>
+    <Variable name="prompt_tokens">
+      <JSONPath>$.prompt_tokens</JSONPath>
+    </Variable>
+    <Variable name="completion_tokens">
+      <JSONPath>$.completion_tokens</JSONPath>
+    </Variable>
+    <Variable name="total_tokens">
+      <JSONPath>$.total_tokens</JSONPath>
+    </Variable>
+  </JSONPayload>
+  <Source clearPayload="false">request</Source>
+</ExtractVariables>

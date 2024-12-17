@@ -11,21 +11,78 @@ static_resources:
         typed_config:
           "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           stat_prefix: ingress_http
+          
           http_filters:
+
+          # evaluate JWT tokens, allow_missing allows API Key also
+          - name: envoy.filters.http.jwt_authn
+            typed_config: 
+              "@type": type.googleapis.com/envoy.extensions.filters.http.jwt_authn.v3.JwtAuthentication
+              providers:
+                apigee:
+                  issuer: https://34-8-159-97.nip.io/remote-token/token
+                  audiences:
+                  - remote-service-client
+                  remote_jwks:
+                    http_uri:
+                      uri: https://34-8-159-97.nip.io/remote-token/certs
+                      cluster: apigee-auth-service
+                      timeout: 5s
+                    cache_duration:
+                      seconds: 300
+                  payload_in_metadata: https://34-8-159-97.nip.io/remote-token/token
+              rules:
+              - match:
+                  prefix: /
+                requires:
+                  requires_any:
+                    requirements:
+                    - provider_name: apigee
+                    - allow_missing: {}
+
+          # evaluate Apigee rules
+          - name: envoy.filters.http.ext_authz
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.ext_authz.v3.ExtAuthz
+              transport_api_version: V3
+              grpc_service:
+                envoy_grpc:
+                  cluster_name: apigee-remote-service-envoy
+                timeout: 1s
+              metadata_context_namespaces:
+              - envoy.filters.http.jwt_authn
+
+          # check llm token data, send to apigee analytics
           - name: envoy.filters.http.golang
             typed_config:
               "@type": type.googleapis.com/envoy.extensions.filters.http.golang.v3alpha.Config
               library_id: filter
-              library_path: "/etc/envoy/filter.so"
+              library_path: /etc/envoy/filter.so
               plugin_name: filter
               plugin_config:
                 "@type": type.googleapis.com/xds.type.v3.TypedStruct
                 value:
-                  apigee_endpoint: "https://34-8-159-97.nip.io"
+                  apigee_endpoint: https://34-8-159-97.nip.io
+
           - name: envoy.filters.http.router
             typed_config:
               "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+
+          access_log:
+
+          # collect Apigee analytics
+          - name: envoy.access_loggers.http_grpc
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.access_loggers.grpc.v3.HttpGrpcAccessLogConfig
+              common_config:
+                transport_api_version: V3
+                grpc_service:
+                  envoy_grpc:
+                    cluster_name: apigee-remote-service-envoy
+                log_name: apigee-remote-service-envoy
+
           route_config:
+
             name: local_route
             virtual_hosts:
             - name: local_service
@@ -44,9 +101,10 @@ static_resources:
                   host_rewrite_literal: europe-west4-aiplatform.googleapis.com
                   cluster: service_mistral_api
   clusters:
+  
+  # Vertex AI endpoint for Gemini model
   - name: service_gemini_api
     type: LOGICAL_DNS
-    # Comment out the following line to test on v6 networks
     dns_lookup_family: V4_ONLY
     load_assignment:
       cluster_name: service_gemini_api
@@ -62,9 +120,10 @@ static_resources:
       typed_config:
         "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
         sni: europe-west1-aiplatform.googleapis.com
+
+  # Vertex AI endpoint for Mistral model
   - name: service_mistral_api
     type: LOGICAL_DNS
-    # Comment out the following line to test on v6 networks
     dns_lookup_family: V4_ONLY
     load_assignment:
       cluster_name: service_mistral_api
@@ -80,3 +139,50 @@ static_resources:
       typed_config:
         "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
         sni: europe-west4-aiplatform.googleapis.com
+
+  # define cluster for Apigee remote service
+  - name: apigee-remote-service-envoy
+    type: LOGICAL_DNS
+    http2_protocol_options: {}
+    load_assignment:
+      cluster_name: apigee-remote-service-envoy
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: "localhost"
+                port_value: 5000
+    common_lb_config:
+      healthy_panic_threshold:
+        value: 50.0
+    health_checks:
+      - timeout: 1s
+        interval: 5s
+        interval_jitter: 1s
+        no_traffic_interval: 5s
+        unhealthy_threshold: 1
+        healthy_threshold: 3
+        grpc_health_check: {}
+    connect_timeout: 0.25s
+
+  # define cluster for Apigee JWKS certs
+  - name: apigee-auth-service
+    connect_timeout: 2s
+    type: LOGICAL_DNS
+    dns_lookup_family: V4_ONLY
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: apigee-auth-service
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: "34-8-159-97.nip.io"
+                port_value: "443"
+    transport_socket:
+      name: envoy.transport_sockets.tls
+      typed_config:
+        "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+        sni: "34-8-159-97.nip.io"

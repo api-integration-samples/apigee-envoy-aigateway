@@ -101,13 +101,11 @@ func (f *filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 	if strings.Contains(bufferContent, "prompt_tokens") {
 		prompt_tokens := prompt_regexp.FindString(bufferContent)
 		prompt_tokens = strings.Trim(strings.Replace(prompt_tokens, "\"prompt_tokens\":", "", -1), " ")
-		fmt.Println("prompt_tokens: " + prompt_tokens)
 		completion_tokens := completion_regexp.FindString(bufferContent)
 		completion_tokens = strings.Trim(strings.Replace(completion_tokens, "\"completion_tokens\":", "", -1), " ")
-		fmt.Println("completion_tokens: " + completion_tokens)
 		total_tokens := total_regexp.FindString(bufferContent)
 		total_tokens = strings.Trim(strings.Replace(total_tokens, "\"total_tokens\":", "", -1), " ")
-		fmt.Println("total_tokens: " + total_tokens)
+		fmt.Println("found prompt_tokens: " + prompt_tokens + ", completion_tokens: " + completion_tokens + ", total_tokens: " + total_tokens + " - sending to Apigee.")
 
 		postBody, _ := json.Marshal(map[string]string{
 			"model_name":        f.path,
