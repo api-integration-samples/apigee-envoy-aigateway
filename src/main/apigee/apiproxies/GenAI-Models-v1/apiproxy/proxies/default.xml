@@ -38,7 +38,7 @@
   <Flows>
   </Flows>
   <HTTPProxyConnection>
-    <BasePath>/v1/genai</BasePath>
+    <BasePath>/v1/genai/models</BasePath>
     <Properties/>
     <VirtualHost>default</VirtualHost>
   </HTTPProxyConnection>

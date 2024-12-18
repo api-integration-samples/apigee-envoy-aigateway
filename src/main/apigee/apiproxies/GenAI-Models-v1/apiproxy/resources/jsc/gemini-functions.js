@@ -7,6 +7,7 @@ if (geminiResponse.length > 0 && geminiResponse[geminiResponse.length - 1].usage
   context.setVariable("genai.promptTokenCount", usageMetadata.promptTokenCount);
   context.setVariable("genai.responseTokenCount", usageMetadata.candidatesTokenCount);
   context.setVariable("genai.totalTokenCount", usageMetadata.totalTokenCount);
+  context.setVariable("genai.modelName", "/gemini15-pro");
 }
 
 context.setVariable("response.content", JSON.stringify({

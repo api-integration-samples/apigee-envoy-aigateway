@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/envoyproxy/envoy/contrib/golang/common/go/api"
 	"golang.org/x/oauth2"
@@ -96,6 +97,8 @@ func (f *filter) EncodeHeaders(header api.ResponseHeaderMap, endStream bool) api
 // The endStream is true when handling the last piece of the body.
 func (f *filter) EncodeData(buffer api.BufferInstance, endStream bool) api.StatusType {
 
+	start := time.Now()
+
 	bufferContent := buffer.String()
 
 	if strings.Contains(bufferContent, "prompt_tokens") {
@@ -105,23 +108,13 @@ func (f *filter) EncodeData(buffer api.BufferInstance, endStream bool) api.Statu
 		completion_tokens = strings.Trim(strings.Replace(completion_tokens, "\"completion_tokens\":", "", -1), " ")
 		total_tokens := total_regexp.FindString(bufferContent)
 		total_tokens = strings.Trim(strings.Replace(total_tokens, "\"total_tokens\":", "", -1), " ")
-		fmt.Println("found prompt_tokens: " + prompt_tokens + ", completion_tokens: " + completion_tokens + ", total_tokens: " + total_tokens + " - sending to Apigee.")
+		fmt.Println("found " + prompt_tokens + " prompt tokens, " + completion_tokens + " completion tokens, " + total_tokens + " total tokens - sending to Apigee X Analytics.")
 
-		postBody, _ := json.Marshal(map[string]string{
-			"model_name":        f.path,
-			"prompt_tokens":     prompt_tokens,
-			"completion_tokens": completion_tokens,
-			"total_tokens":      total_tokens,
-		})
-
-		requestBody := bytes.NewBuffer(postBody)
-		resp, _ := http.NewRequest(http.MethodPost, f.config.apigeeEndpoint+"/genai/token-analytics", requestBody)
-		resp.Header.Add("x-api-key", f.key)
-		resp.Header.Add("Content-Type", "application/json")
-
-		http.DefaultClient.Do(resp)
-		// handle error, log to retry later...
+		go sendAnalyticsToApigee(f.path, prompt_tokens, completion_tokens, total_tokens, f.key, f.config.apigeeEndpoint)
 	}
+
+	elapsed := time.Since(start)
+	fmt.Printf("apigee token analytics checks took %s for buffer length %d\n", elapsed, len(bufferContent))
 
 	return api.Continue
 }
@@ -135,24 +128,6 @@ func (f *filter) OnLog(reqHeader api.RequestHeaderMap, reqTrailer api.RequestTra
 	code, _ := f.callbacks.StreamInfo().ResponseCode()
 	respCode := strconv.Itoa(int(code))
 	api.LogDebug(respCode)
-
-	/*
-		// It's possible to kick off a goroutine here.
-		// But it's unsafe to access the f.callbacks because the FilterCallbackHandler
-		// may be already released when the goroutine is scheduled.
-		go func() {
-			defer func() {
-				if p := recover(); p != nil {
-					const size = 64 << 10
-					buf := make([]byte, size)
-					buf = buf[:runtime.Stack(buf, false)]
-					fmt.Printf("http: panic serving: %v\n%s", p, buf)
-				}
-			}()
-
-			// do time-consuming jobs
-		}()
-	*/
 }
 
 // OnLogDownstreamStart is called when HTTP Connection Manager filter receives a new HTTP request
@@ -172,4 +147,27 @@ func (f *filter) OnDestroy(reason api.DestroyReason) {
 	// is released. But we can still access other Go fields in the filter f.
 
 	// goroutine can be used everywhere.
+}
+
+func sendAnalyticsToApigee(modelName string, promptTokens string, completionTokens string, totalTokens string, apiKey string, apigeeEndpoint string) {
+	postBody, _ := json.Marshal(map[string]string{
+		"model_name":        modelName,
+		"prompt_tokens":     promptTokens,
+		"completion_tokens": completionTokens,
+		"total_tokens":      totalTokens,
+	})
+
+	requestBody := bytes.NewBuffer(postBody)
+	resp, _ := http.NewRequest(http.MethodPost, apigeeEndpoint+"/genai/token-analytics", requestBody)
+	resp.Header.Add("x-api-key", apiKey)
+	resp.Header.Add("Content-Type", "application/json")
+
+	res, err := http.DefaultClient.Do(resp)
+	if err != nil {
+		fmt.Println("Error sending data to Apigee - " + err.Error())
+		// handle error, log to retry later...
+	} else if res.StatusCode != 200 {
+		fmt.Println("Error sending data to Apigee - response code " + strconv.Itoa(res.StatusCode))
+		// handle error, log to retry later...
+	}
 }

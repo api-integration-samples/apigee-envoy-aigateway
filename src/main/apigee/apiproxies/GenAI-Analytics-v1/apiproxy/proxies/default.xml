@@ -22,7 +22,7 @@
   </PostFlow>
   <Flows/>
   <HTTPProxyConnection>
-    <BasePath>/genai/token-analytics</BasePath>
+    <BasePath>/v1/genai/analytics</BasePath>
     <Properties/>
   </HTTPProxyConnection>
   <RouteRule name="default"/>

@@ -1,9 +1,9 @@
-<APIProxy revision="1" name="GenAI-TokenAnalytics-v1">
+<APIProxy revision="1" name="GenAI-Analytics-v1">
     <DisplayName></DisplayName>
     <Description></Description>
     <CreatedAt>1734441727187</CreatedAt>
     <LastModifiedAt>1734442360190</LastModifiedAt>
-    <BasePaths>/genai/token-analytics</BasePaths>
+    <BasePaths>/v1/genai/analytics</BasePaths>
     <Policies>
         <Policy>EV-GetData</Policy>
         <Policy>VA-VerifyKey</Policy>

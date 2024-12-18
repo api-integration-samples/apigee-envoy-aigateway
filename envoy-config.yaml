@@ -81,6 +81,7 @@ static_resources:
                     cluster_name: apigee-remote-service-envoy
                 log_name: apigee-remote-service-envoy
 
+          # route config
           route_config:
 
             name: local_route
@@ -100,6 +101,11 @@ static_resources:
                   prefix_rewrite: "/v1/projects/apigee-tlab1/locations/europe-west4/publishers/mistralai/models/mistral-nemo@2407:rawPredict"
                   host_rewrite_literal: europe-west4-aiplatform.googleapis.com
                   cluster: service_mistral_api
+              - match:
+                  prefix: "/large-payload-model"
+                route:
+                  prefix_rewrite: "/payload"
+                  cluster: service_large_payload
   clusters:
   
   # Vertex AI endpoint for Gemini model
@@ -140,7 +146,21 @@ static_resources:
         "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
         sni: europe-west4-aiplatform.googleapis.com
 
-  # define cluster for Apigee remote service
+  # Large model payload test cluster
+  - name: service_large_payload
+    type: LOGICAL_DNS
+    dns_lookup_family: V4_ONLY
+    load_assignment:
+      cluster_name: service_large_payload
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: localhost
+                port_value: 8080
+
+  # Apigee remote service
   - name: apigee-remote-service-envoy
     type: LOGICAL_DNS
     http2_protocol_options: {}
@@ -166,7 +186,7 @@ static_resources:
         grpc_health_check: {}
     connect_timeout: 0.25s
 
-  # define cluster for Apigee JWKS certs
+  # Apigee JWKS certs
   - name: apigee-auth-service
     connect_timeout: 2s
     type: LOGICAL_DNS

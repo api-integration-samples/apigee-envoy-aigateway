@@ -1,0 +1,100 @@
+[{
+  "name": "Gen AI Analytics",
+  "displayName": "Gen AI Analytics",
+  "approvalType": "auto",
+  "attributes": [
+    {
+      "name": "access",
+      "value": "public"
+    }
+  ],
+  "environments": [
+    "dev"
+  ],
+  "createdAt": "1734499012854",
+  "lastModifiedAt": "1734499012854",
+  "operationGroup": {
+    "operationConfigs": [
+      {
+        "apiSource": "GenAI-Analytics-v1",
+        "operations": [
+          {
+            "resource": "/"
+          }
+        ],
+        "quota": {}
+      },
+      {
+        "apiSource": "GenAI-Models-v1",
+        "operations": [
+          {
+            "resource": "/"
+          }
+        ],
+        "quota": {}
+      }
+    ],
+    "operationConfigType": "proxy"
+  }
+}
+,{
+  "name": "Gen AI Models",
+  "displayName": "Gen AI Models",
+  "approvalType": "auto",
+  "attributes": [
+    {
+      "name": "access",
+      "value": "public"
+    }
+  ],
+  "environments": [
+    "dev"
+  ],
+  "createdAt": "1734454519271",
+  "lastModifiedAt": "1734499099591",
+  "operationGroup": {
+    "operationConfigs": [
+      {
+        "apiSource": "mistral.googleapis.com",
+        "operations": [
+          {
+            "resource": "/"
+          }
+        ],
+        "quota": {
+          "limit": "2",
+          "interval": "1",
+          "timeUnit": "minute"
+        }
+      },
+      {
+        "apiSource": "gemini.googleapis.com",
+        "operations": [
+          {
+            "resource": "/"
+          }
+        ],
+        "quota": {
+          "limit": "3",
+          "interval": "1",
+          "timeUnit": "minute"
+        }
+      },
+      {
+        "apiSource": "largemodel",
+        "operations": [
+          {
+            "resource": "/"
+          }
+        ],
+        "quota": {
+          "limit": "2",
+          "interval": "1",
+          "timeUnit": "minute"
+        }
+      }
+    ],
+    "operationConfigType": "remoteservice"
+  }
+}
+]

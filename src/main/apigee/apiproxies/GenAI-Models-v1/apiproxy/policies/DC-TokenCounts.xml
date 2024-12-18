@@ -3,15 +3,19 @@
   <DisplayName>DC-TokenCounts</DisplayName>
   <IgnoreUnresolvedVariables>false</IgnoreUnresolvedVariables>
   <Capture>
+    <Collect ref="genai.modelName" default="0"/>
+    <DataCollector>dc_genai_model_name</DataCollector>
+  </Capture>
+  <Capture>
     <Collect ref="genai.promptTokenCount" default="0"/>
-    <DataCollector>dc_promptTokenCount</DataCollector>
+    <DataCollector>dc_genai_prompt_tokens</DataCollector>
   </Capture>
   <Capture>
     <Collect ref="genai.responseTokenCount" default="0"/>
-    <DataCollector>dc_responseTokenCount</DataCollector>
+    <DataCollector>dc_genai_completion_tokens</DataCollector>
   </Capture>
   <Capture>
     <Collect ref="genai.totalTokenCount" default="0"/>
-    <DataCollector>dc_totalTokenCount</DataCollector>
+    <DataCollector>dc_genai_total_tokens</DataCollector>
   </Capture>
 </DataCapture>

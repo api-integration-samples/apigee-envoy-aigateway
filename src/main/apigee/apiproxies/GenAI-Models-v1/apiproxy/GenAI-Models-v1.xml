@@ -1,9 +1,9 @@
-<APIProxy revision="20" name="MP-GenAIAPI-v1">
+<APIProxy revision="20" name="GenAI-Models-v1">
     <DisplayName></DisplayName>
     <Description>This API provides Gen AI services.</Description>
     <CreatedAt>1732771062740</CreatedAt>
     <LastModifiedAt>1732771131763</LastModifiedAt>
-    <BasePaths>/v1/genai</BasePaths>
+    <BasePaths>/v1/genai/models</BasePaths>
     <Policies>
         <Policy>AM-SetGeminiData</Policy>
         <Policy>EV-GetInputs</Policy>
