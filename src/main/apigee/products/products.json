@@ -55,7 +55,7 @@
   "operationGroup": {
     "operationConfigs": [
       {
-        "apiSource": "mistral.googleapis.com",
+        "apiSource": "/mistral2407-nemo",
         "operations": [
           {
             "resource": "/"
@@ -68,7 +68,7 @@
         }
       },
       {
-        "apiSource": "gemini.googleapis.com",
+        "apiSource": "/gemini15-flash",
         "operations": [
           {
             "resource": "/"
@@ -81,7 +81,7 @@
         }
       },
       {
-        "apiSource": "largemodel",
+        "apiSource": "/large-model",
         "operations": [
           {
             "resource": "/"
