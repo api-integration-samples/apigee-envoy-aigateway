@@ -16,16 +16,6 @@ import (
 	"golang.org/x/oauth2/google"
 )
 
-type Result struct {
-	UsageMetadata UsageMetadata `json:"usageMetadata"`
-}
-
-type UsageMetadata struct {
-	PromptTokenCount     int `json:"promptTokenCount"`
-	CandidatesTokenCount int `json:"candidatesTokenCount"`
-	TotalTokenCount      int `json:"totalTokenCount"`
-}
-
 var prompt_regexp, _ = regexp.Compile("\"prompt_tokens\":\\s*\\d+")
 var completion_regexp, _ = regexp.Compile("\"completion_tokens\":\\s*\\d+")
 var total_regexp, _ = regexp.Compile("\"total_tokens\":\\s*\\d+")

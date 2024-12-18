@@ -14,6 +14,16 @@ static_resources:
           
           http_filters:
 
+          - name: envoy.filters.http.lua
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
+              default_source_code:
+                inline_string: |
+                  -- Called on the request path.
+                  function envoy_on_request(request_handle)
+                    request_handle:headers():replace("host", request_handle:headers():get(":path"))
+                  end
+
           # evaluate JWT tokens, allow_missing allows API Key also
           - name: envoy.filters.http.jwt_authn
             typed_config: 
@@ -102,7 +112,7 @@ static_resources:
                   host_rewrite_literal: europe-west4-aiplatform.googleapis.com
                   cluster: service_mistral_api
               - match:
-                  prefix: "/large-payload-model"
+                  prefix: "/large-model"
                 route:
                   prefix_rewrite: "/payload"
                   cluster: service_large_payload
