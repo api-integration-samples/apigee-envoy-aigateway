@@ -11,6 +11,9 @@ gcloud iam service-accounts create genaiservice \
 gcloud projects add-iam-policy-binding $PROJECT_ID \
     --member="serviceAccount:genaiservice@$PROJECT_ID.iam.gserviceaccount.com" \
     --role="roles/aiplatform.user" --project $PROJECT_ID
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --member="serviceAccount:genaiservice@$PROJECT_ID.iam.gserviceaccount.com" \
+    --role="roles/storage.admin" --project $PROJECT_ID
 
 # create Apigee data collectors for llm tokens
 apigeecli datacollectors create -n dc_genai_model_name -d "Name of the Gen AI model" -p STRING -o $PROJECT_ID -t $(gcloud auth print-access-token)
@@ -30,3 +33,9 @@ cd ../../../../..
 # create Apigee products
 cd ./src/main/apigee/products
 apigeecli products import -f products.json -o $PROJECT_ID -t $(gcloud auth print-access-token)
+
+# create storage bucket
+gcloud storage buckets create gs://$BUCKET_NAME --location=eu --project $PROJECT_ID
+# upload apigee envoy config
+gcloud storage cp apigee-config.local.yaml gs://$BUCKET_NAME
+gcloud storage cp envoy-config.yaml gs://$BUCKET_NAME

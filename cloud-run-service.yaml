@@ -1,0 +1,33 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: apigee-envoy-gateway
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/execution-environment: gen2
+    spec:
+      serviceAccountName: genaiservice@apigee-tlab1.iam.gserviceaccount.com
+      containers:
+      - image: envoyproxy/envoy:contrib-dev
+        volumeMounts:
+        - name: envoyfs
+          mountPath: /mnt/config
+        args:
+        - "-c /mnt/config/envoy-config.yaml"
+        ports:
+        - containerPort: 10000
+      - image: google/apigee-envoy-adapter:v2.1.4
+        volumeMounts:
+        - name: envoyfs
+          mountPath: /mnt/config
+        args:
+        - "-c /mnt/config/apigee-config.local.yaml"
+      volumes:
+      - name: envoyfs
+        csi:
+          driver: gcsfuse.run.googleapis.com
+          readOnly: True
+          volumeAttributes:
+            bucketName: envoyfs-yagcm
